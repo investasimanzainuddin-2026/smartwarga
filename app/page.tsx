@@ -2,244 +2,264 @@
 
 import React, { useState } from "react";
 
-interface Transaksi {
+// --- TIPE DATA OPERASIONAL 1 RT ---
+interface KartuKeluarga {
+  id: number;
+  noKK: string;
+  blok: string;
+  kepalaKeluarga: string;
+  jumlahAnggota: number;
+  statusHunian: "Pemilik" | "Kontrak/Sewa";
+  noWa: string;
+  statusIuranRutin: "Lunas" | "Belum Bayar";
+}
+
+interface TransaksiKas {
   id: number;
   tanggal: string;
+  posKas: "Kas Rutin Bulanan" | "Kas Hari Besar" | "Kas Proyek & Dadakan";
   keterangan: string;
   jenis: "masuk" | "keluar";
   nominal: number;
 }
 
-interface Warga {
+interface PatunganFleksibel {
   id: number;
-  blok: string;
-  nama: string;
-  noWa: string; // Format internasional tanpa +, misal 62812...
-  nominalIuran: number;
-  status: "Lunas" | "Belum Bayar";
+  judul: string;
+  kategori: "Hari Besar" | "Infrastruktur / Dadakan";
+  targetDana: number;
+  terkumpul: number;
+  status: "Aktif" | "Selesai";
 }
 
-export default function SmartWargaMVP() {
-  // Data Awal Transaksi Kas
-  const [transaksi, setTransaksi] = useState<Transaksi[]>([
-    { id: 1, tanggal: "01 Nov 2026", keterangan: "Saldo Awal Kas RT 05", jenis: "masuk", nominal: 4500000 },
-    { id: 2, tanggal: "05 Nov 2026", keterangan: "Iuran Bulanan Warga (15 KK)", jenis: "masuk", nominal: 2250000 },
-    { id: 3, tanggal: "10 Nov 2026", keterangan: "Honor & Kopi Petugas Keamanan", jenis: "keluar", nominal: 850000 },
-    { id: 4, tanggal: "14 Nov 2026", keterangan: "Perbaikan Lampu Jalan Blok B", jenis: "keluar", nominal: 350000 },
-  ]);
+interface InfoAgenda {
+  id: number;
+  tanggalKegiatan: string;
+  kategori: "Gotong Royong" | "Rapat Warga" | "Hari Besar" | "Info Penting";
+  judul: string;
+  deskripsi: string;
+  jumlahHadir: number;
+}
 
-  // Data Awal Status Iuran Warga (Dilengkapi Nomor WA & Nominal)
-  const [daftarWarga, setDaftarWarga] = useState<Warga[]>([
-    { id: 1, blok: "A-01", nama: "Bpk. Hendra Wijaya", noWa: "6281234567890", nominalIuran: 150000, status: "Lunas" },
-    { id: 2, blok: "A-02", nama: "Bpk. Budi Santoso", noWa: "6281234567891", nominalIuran: 150000, status: "Lunas" },
-    { id: 3, blok: "A-03", nama: "Ibu Ratna Sari", noWa: "6281234567892", nominalIuran: 150000, status: "Belum Bayar" },
-    { id: 4, blok: "B-01", nama: "Bpk. Dimas Pratama", noWa: "6281234567893", nominalIuran: 150000, status: "Lunas" },
-    { id: 5, blok: "B-02", nama: "Bpk. Agus Salim", noWa: "6281234567894", nominalIuran: 150000, status: "Belum Bayar" },
-  ]);
+type TabRT = "beranda" | "warga_kk" | "keuangan_pos" | "info_agenda";
 
-  // State untuk Form Input Pengurus
-  const [keterangan, setKeterangan] = useState("");
-  const [nominal, setNominal] = useState("");
-  const [jenis, setJenis] = useState<"masuk" | "keluar">("masuk");
+export default function SmartWargaRT() {
+  const [tabAktif, setTabAktif] = useState<TabRT>("beranda");
 
-  // Hitung Total Otomatis
-  const totalMasuk = transaksi.filter((t) => t.jenis === "masuk").reduce((acc, curr) => acc + curr.nominal, 0);
-  const totalKeluar = transaksi.filter((t) => t.jenis === "keluar").reduce((acc, curr) => acc + curr.nominal, 0);
-  const saldoAkhir = totalMasuk - totalKeluar;
-
-  const formatRupiah = (angka: number) => {
-    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(angka);
+  // Identitas RT
+  const infoRT = {
+    namaRT: "RT 05 / RW 02 • Perumahan Griya Harmoni",
+    iuranBulanan: 150000,
+    rekeningRT: "BCA 1234567890 a.n. Kas RT 05",
   };
 
-  // Fungsi Tambah Transaksi Baru
-  const handleTambahTransaksi = (e: React.FormEvent) => {
+  // 1. Master Data Warga Berbasis KK
+  const [daftarKK, setDaftarKK] = useState<KartuKeluarga[]>([
+    { id: 1, noKK: "2171041205880001", blok: "A-01", kepalaKeluarga: "Bpk. Hendra Wijaya", jumlahAnggota: 4, statusHunian: "Pemilik", noWa: "6281234567890", statusIuranRutin: "Lunas" },
+    { id: 2, noKK: "2171042308900004", blok: "A-02", kepalaKeluarga: "Bpk. Budi Santoso", jumlahAnggota: 3, statusHunian: "Pemilik", noWa: "6281234567891", statusIuranRutin: "Lunas" },
+    { id: 3, noKK: "2171041511920002", blok: "A-03", kepalaKeluarga: "Ibu Ratna Sari", jumlahAnggota: 2, statusHunian: "Kontrak/Sewa", noWa: "6281234567892", statusIuranRutin: "Belum Bayar" },
+    { id: 4, noKK: "2171040903850007", blok: "B-01", kepalaKeluarga: "Bpk. Dimas Pratama", jumlahAnggota: 5, statusHunian: "Pemilik", noWa: "6281234567893", statusIuranRutin: "Lunas" },
+    { id: 5, noKK: "2171043001910009", blok: "B-02", kepalaKeluarga: "Bpk. Agus Salim", jumlahAnggota: 4, statusHunian: "Pemilik", noWa: "6281234567894", statusIuranRutin: "Belum Bayar" },
+  ]);
+
+  // 2. Data Transaksi Multi-Pos Kas
+  const [transaksi, setTransaksi] = useState<TransaksiKas[]>([
+    { id: 1, tanggal: "01 Nov 2026", posKas: "Kas Rutin Bulanan", keterangan: "Saldo Awal Kas Rutin RT 05", jenis: "masuk", nominal: 4200000 },
+    { id: 2, tanggal: "05 Nov 2026", posKas: "Kas Rutin Bulanan", keterangan: "Iuran Bulanan (3 KK Lunas)", jenis: "masuk", nominal: 450000 },
+    { id: 3, tanggal: "08 Nov 2026", posKas: "Kas Rutin Bulanan", keterangan: "Honor & Kopi Satpam", jenis: "keluar", nominal: 850000 },
+    { id: 4, tanggal: "10 Nov 2026", posKas: "Kas Proyek & Dadakan", keterangan: "Patungan Warga - Plang Nama Jalan Blok A & B", jenis: "masuk", nominal: 950000 },
+    { id: 5, tanggal: "12 Nov 2026", posKas: "Kas Hari Besar", keterangan: "Sisa Saldo Panitia 17 Agustusan", jenis: "masuk", nominal: 1350000 },
+  ]);
+
+  // 3. Kampanye Patungan Fleksibel (Hari Besar / Plang Jalan / Lampu Jalan)
+  const [daftarPatungan, setDaftarPatungan] = useState<PatunganFleksibel[]>([
+    { id: 1, judul: "Pembuatan Plang Nama Jalan Blok A & B", kategori: "Infrastruktur / Dadakan", targetDana: 1500000, terkumpul: 950000, status: "Aktif" },
+    { id: 2, judul: "Perbaikan 3 Titik Lampu Jalan Mati", kategori: "Infrastruktur / Dadakan", targetDana: 750000, terkumpul: 750000, status: "Selesai" },
+    { id: 3, judul: "Tabungan Kas Peringatan 17 Agustusan", kategori: "Hari Besar", targetDana: 5000000, terkumpul: 1350000, status: "Aktif" },
+  ]);
+
+  // 4. Papan Informasi & Gotong Royong
+  const [daftarInfo, setDaftarInfo] = useState<InfoAgenda[]>([
+    {
+      id: 1,
+      tanggalKegiatan: "Minggu, 22 Nov 2026 • Pukul 07.00 WIB",
+      kategori: "Gotong Royong",
+      judul: "Kerja Bakti Pembersihan Saluran Air & Pemasangan Plang Jalan",
+      deskripsi: "Diharapkan kehadiran minimal 1 perwakilan per KK. Disediakan sarapan bubur ayam dan kopi di Pos Kamling.",
+      jumlahHadir: 14,
+    },
+    {
+      id: 2,
+      tanggalKegiatan: "Sabtu, 28 Nov 2026 • Pukul 19.30 WIB",
+      kategori: "Rapat Warga",
+      judul: "Musyawarah Evaluasi Keamanan Portal & Rencana Tahun Baru",
+      deskripsi: "Bertempat di Balai Warga RT 05. Membahas jadwal ronda akhir tahun dan iuran kebersihan.",
+      jumlahHadir: 9,
+    },
+  ]);
+
+  // --- STATE FORM INPUT ---
+  const [formKK, setFormKK] = useState({ noKK: "", blok: "", kepalaKeluarga: "", jumlahAnggota: 3, statusHunian: "Pemilik" as "Pemilik" | "Kontrak/Sewa", noWa: "" });
+  const [formKas, setFormKas] = useState({ posKas: "Kas Rutin Bulanan" as TransaksiKas["posKas"], keterangan: "", jenis: "masuk" as "masuk" | "keluar", nominal: "" });
+  const [formPatungan, setFormPatungan] = useState({ judul: "", kategori: "Infrastruktur / Dadakan" as PatunganFleksibel["kategori"], targetDana: "" });
+  const [formInfo, setFormInfo] = useState({ tanggalKegiatan: "", kategori: "Gotong Royong" as InfoAgenda["kategori"], judul: "", deskripsi: "" });
+
+  // --- PERHITUNGAN SALDO PER POS ---
+  const hitungSaldoPos = (namaPos: TransaksiKas["posKas"]) => {
+    const masuk = transaksi.filter((t) => t.posKas === namaPos && t.jenis === "masuk").reduce((a, b) => a + b.nominal, 0);
+    const keluar = transaksi.filter((t) => t.posKas === namaPos && t.jenis === "keluar").reduce((a, b) => a + b.nominal, 0);
+    return masuk - keluar;
+  };
+
+  const saldoRutin = hitungSaldoPos("Kas Rutin Bulanan");
+  const saldoHariBesar = hitungSaldoPos("Kas Hari Besar");
+  const saldoProyek = hitungSaldoPos("Kas Proyek & Dadakan");
+  const totalSeluruhKas = saldoRutin + saldoHariBesar + saldoProyek;
+
+  const formatRupiah = (angka: number) =>
+    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(angka);
+
+  const maskNoKK = (noKK: string) => (noKK.length >= 8 ? `${noKK.slice(0, 6)}••••••${noKK.slice(-4)}` : noKK);
+
+  // --- HANDLER AKSI ---
+  const tambahKK = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!keterangan || !nominal) return;
-
-    const baru: Transaksi = {
-      id: Date.now(),
-      tanggal: "17 Nov 2026",
-      keterangan,
-      jenis,
-      nominal: Number(nominal),
-    };
-
-    setTransaksi([baru, ...transaksi]);
-    setKeterangan("");
-    setNominal("");
+    if (!formKK.noKK || !formKK.blok || !formKK.kepalaKeluarga) return;
+    setDaftarKK([
+      {
+        id: Date.now(),
+        noKK: formKK.noKK,
+        blok: formKK.blok.toUpperCase(),
+        kepalaKeluarga: formKK.kepalaKeluarga,
+        jumlahAnggota: Number(formKK.jumlahAnggota),
+        statusHunian: formKK.statusHunian,
+        noWa: formKK.noWa.startsWith("0") ? "62" + formKK.noWa.slice(1) : formKK.noWa || "6281200000000",
+        statusIuranRutin: "Belum Bayar",
+      },
+      ...daftarKK,
+    ]);
+    setFormKK({ noKK: "", blok: "", kepalaKeluarga: "", jumlahAnggota: 3, statusHunian: "Pemilik", noWa: "" });
   };
 
-  // Fungsi Ubah Status Bayar Warga + Otomatis Catat ke Kas jika Lunas
-  const toggleStatusWarga = (warga: Warga) => {
-    const statusBaru = warga.status === "Lunas" ? "Belum Bayar" : "Lunas";
+  const tambahTransaksi = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formKas.keterangan || !formKas.nominal) return;
+    setTransaksi([
+      { id: Date.now(), tanggal: "17 Nov 2026", posKas: formKas.posKas, keterangan: formKas.keterangan, jenis: formKas.jenis, nominal: Number(formKas.nominal) },
+      ...transaksi,
+    ]);
+    setFormKas({ ...formKas, keterangan: "", nominal: "" });
+  };
 
-    setDaftarWarga(
-      daftarWarga.map((w) => (w.id === warga.id ? { ...w, status: statusBaru } : w))
-    );
+  const tambahKampanyePatungan = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formPatungan.judul || !formPatungan.targetDana) return;
+    setDaftarPatungan([
+      { id: Date.now(), judul: formPatungan.judul, kategori: formPatungan.kategori, targetDana: Number(formPatungan.targetDana), terkumpul: 0, status: "Aktif" },
+      ...daftarPatungan,
+    ]);
+    setFormPatungan({ judul: "", kategori: "Infrastruktur / Dadakan", targetDana: "" });
+  };
 
-    // Jika diubah menjadi Lunas, otomatis tambahkan ke mutasi kas masuk
+  const tambahInfoAgenda = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formInfo.judul || !formInfo.tanggalKegiatan) return;
+    setDaftarInfo([
+      { id: Date.now(), tanggalKegiatan: formInfo.tanggalKegiatan, kategori: formInfo.kategori, judul: formInfo.judul, deskripsi: formInfo.deskripsi, jumlahHadir: 1 },
+      ...daftarInfo,
+    ]);
+    setFormInfo({ tanggalKegiatan: "", kategori: "Gotong Royong", judul: "", deskripsi: "" });
+  };
+
+  const konfirmasiHadir = (id: number) => {
+    setDaftarInfo(daftarInfo.map((info) => (info.id === id ? { ...info, jumlahHadir: info.jumlahHadir + 1 } : info)));
+  };
+
+  const toggleIuranRutin = (kk: KartuKeluarga) => {
+    const statusBaru = kk.statusIuranRutin === "Lunas" ? "Belum Bayar" : "Lunas";
+    setDaftarKK(daftarKK.map((item) => (item.id === kk.id ? { ...item, statusIuranRutin: statusBaru } : item)));
     if (statusBaru === "Lunas") {
-      const transaksiOtomatis: Transaksi = {
-        id: Date.now(),
-        tanggal: "17 Nov 2026",
-        keterangan: `Iuran Nov 2026 - ${warga.nama} (${warga.blok})`,
-        jenis: "masuk",
-        nominal: warga.nominalIuran,
-      };
-      setTransaksi([transaksiOtomatis, ...transaksi]);
+      setTransaksi([
+        { id: Date.now(), tanggal: "17 Nov 2026", posKas: "Kas Rutin Bulanan", keterangan: `Iuran Nov 2026 - ${kk.kepalaKeluarga} (${kk.blok})`, jenis: "masuk", nominal: infoRT.iuranBulanan },
+        ...transaksi,
+      ]);
     }
   };
 
-  // Fungsi Generate Link WhatsApp Tagihan Otomatis
-  const kirimTagihanWA = (warga: Warga) => {
-    const pesan = `Halo *${warga.nama}* (Blok *${warga.blok}*),%0A%0AIni adalah pengingat otomatis dari *SmartWarga - Klaster Harmoni RT 05*.%0A%0AIuran lingkungan bulan *November 2026* sebesar *${formatRupiah(warga.nominalIuran)}* tercatat masih *Belum Terbayar*.%0A%0AMohon dapat melakukan pembayaran melalui rekening kas RT atau konfirmasi jika sudah transfer.%0A%0ATerima kasih atas partisipasinya menjaga kenyamanan lingkungan kita! 🙏`;
-
-    const urlWA = `https://wa.me/${warga.noWa}?text=${pesan}`;
-    window.open(urlWA, "_blank");
+  const tagihWA = (kk: KartuKeluarga) => {
+    const teks = `Halo *${kk.kepalaKeluarga}* (Blok *${kk.blok}*),%0A%0APengingat iuran rutin *${infoRT.namaRT}* bulan *November 2026* sebesar *${formatRupiah(infoRT.iuranBulanan)}*.%0A%0ATransfer ke: ${infoRT.rekeningRT}.%0ATerima kasih! 🙏`;
+    window.open(`https://wa.me/${kk.noWa}?text=${teks}`, "_blank");
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
-      {/* Header Aplikasi */}
-      <header className="bg-emerald-700 text-white shadow-md">
-        <div className="max-w-5xl mx-auto px-4 py-5 flex justify-between items-center">
+    <div className="min-h-screen bg-slate-100 text-slate-800 flex flex-col md:flex-row font-sans">
+      {/* SIDEBAR NAVIGASI 1 RT */}
+      <aside className="w-full md:w-64 bg-emerald-950 text-emerald-50 flex flex-col justify-between shrink-0">
+        <div>
+          <div className="p-6 border-b border-emerald-900">
+            <h1 className="text-xl font-extrabold tracking-tight text-white">SmartWarga</h1>
+            <p className="text-xs text-emerald-300 mt-0.5">Sistem Pengelolaan 1 RT</p>
+          </div>
+
+          <nav className="p-4 space-y-1.5">
+            <button
+              onClick={() => setTabAktif("beranda")}
+              className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition ${
+                tabAktif === "beranda" ? "bg-emerald-600 text-white" : "text-emerald-200 hover:bg-emerald-900"
+              }`}
+            >
+              Beranda RT
+            </button>
+            <button
+              onClick={() => setTabAktif("keuangan_pos")}
+              className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition ${
+                tabAktif === "keuangan_pos" ? "bg-emerald-600 text-white" : "text-emerald-200 hover:bg-emerald-900"
+              }`}
+            >
+              Kas & Iuran Fleksibel
+            </button>
+            <button
+              onClick={() => setTabAktif("info_agenda")}
+              className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition flex justify-between items-center ${
+                tabAktif === "info_agenda" ? "bg-emerald-600 text-white" : "text-emerald-200 hover:bg-emerald-900"
+              }`}
+            >
+              <span>Info & Gotong Royong</span>
+              <span className="text-xs bg-emerald-800 px-2 py-0.5 rounded-full">{daftarInfo.length}</span>
+            </button>
+            <button
+              onClick={() => setTabAktif("warga_kk")}
+              className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition flex justify-between items-center ${
+                tabAktif === "warga_kk" ? "bg-emerald-600 text-white" : "text-emerald-200 hover:bg-emerald-900"
+              }`}
+            >
+              <span>Data Warga (KK)</span>
+              <span className="text-xs bg-emerald-800 px-2 py-0.5 rounded-full">{daftarKK.length}</span>
+            </button>
+          </nav>
+        </div>
+
+        <div className="p-4 m-4 bg-emerald-900/60 rounded-xl border border-emerald-800 text-xs">
+          <p className="font-semibold text-white">Total Dana Dikelola RT</p>
+          <p className="text-lg font-bold text-emerald-300 mt-1">{formatRupiah(totalSeluruhKas)}</p>
+          <p className="text-[11px] text-emerald-400 mt-1">Terbagi dalam 3 Pos Kas Transparan</p>
+        </div>
+      </aside>
+
+      {/* KONTEN UTAMA */}
+      <div className="flex-1 flex flex-col">
+        <header className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">SmartWarga</h1>
-            <p className="text-emerald-100 text-sm">Portal Transparansi Kas & Iuran • Klaster Harmoni RT 05</p>
+            <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Portal Resmi Lingkungan</p>
+            <h2 className="text-lg font-bold text-slate-800">{infoRT.namaRT}</h2>
           </div>
-          <span className="bg-emerald-800 text-emerald-100 text-xs px-3 py-1.5 rounded-full font-medium">
-            MVP v0.2 • WA Reminder Ready
+          <span className="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full font-medium">
+            MVP v0.4 • Operasional 1 RT
           </span>
-        </div>
-      </header>
+        </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-        {/* Ringkasan Keuangan (3 Kartu Utama) */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <p className="text-sm text-slate-500 font-medium">Saldo Kas Saat Ini</p>
-            <p className="text-2xl font-bold text-emerald-700 mt-1">{formatRupiah(saldoAkhir)}</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <p className="text-sm text-slate-500 font-medium">Total Pemasukan</p>
-            <p className="text-2xl font-bold text-slate-800 mt-1">{formatRupiah(totalMasuk)}</p>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <p className="text-sm text-slate-500 font-medium">Total Pengeluaran</p>
-            <p className="text-2xl font-bold text-rose-600 mt-1">{formatRupiah(totalKeluar)}</p>
-          </div>
-        </section>
-
-        {/* Form Input Khusus Bendahara / Pengurus */}
-        <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <h2 className="text-lg font-bold text-slate-800 mb-1">Catat Transaksi Kas Manual (Mode Pengurus)</h2>
-          <p className="text-xs text-slate-500 mb-4">Untuk mencatat pemasukan lain-lain atau pengeluaran operasional RT.</p>
-          <form onSubmit={handleTambahTransaksi} className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <input
-              type="text"
-              placeholder="Keterangan (misal: Beli Token Listrik Pos)"
-              value={keterangan}
-              onChange={(e) => setKeterangan(e.target.value)}
-              className="md:col-span-2 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
-            />
-            <input
-              type="number"
-              placeholder="Nominal (Rp)"
-              value={nominal}
-              onChange={(e) => setNominal(e.target.value)}
-              className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
-            />
-            <div className="flex gap-2">
-              <select
-                value={jenis}
-                onChange={(e) => setJenis(e.target.value as "masuk" | "keluar")}
-                className="border border-slate-300 rounded-lg px-2 py-2 text-sm bg-white"
-              >
-                <option value="masuk">Masuk (+)</option>
-                <option value="keluar">Keluar (-)</option>
-              </select>
-              <button
-                type="submit"
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm px-4 py-2 rounded-lg transition"
-              >
-                Simpan
-              </button>
-            </div>
-          </form>
-        </section>
-
-        {/* Dua Kolom Bawah: Riwayat Mutasi Kas & Status Iuran Warga */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Kolom Kiri: Buku Kas Transparan */}
-          <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <h2 className="text-lg font-bold text-slate-800 mb-4">Mutasi Kas Terkini</h2>
-            <div className="divide-y divide-slate-100">
-              {transaksi.map((item) => (
-                <div key={item.id} className="py-3 flex justify-between items-center">
-                  <div>
-                    <p className="text-sm font-medium text-slate-800">{item.keterangan}</p>
-                    <p className="text-xs text-slate-400">{item.tanggal}</p>
-                  </div>
-                  <span
-                    className={`text-sm font-semibold ${
-                      item.jenis === "masuk" ? "text-emerald-600" : "text-rose-600"
-                    }`}
-                  >
-                    {item.jenis === "masuk" ? "+" : "-"} {formatRupiah(item.nominal)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Kolom Kanan: Status Pembayaran Warga + Tombol Tagih WA */}
-          <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-slate-800">Status Iuran November 2026</h2>
-              <span className="text-xs text-slate-400">Klik status untuk lunas</span>
-            </div>
-            <div className="divide-y divide-slate-100">
-              {daftarWarga.map((warga) => (
-                <div key={warga.id} className="py-3 flex justify-between items-center gap-2">
-                  <div>
-                    <div className="flex items-center">
-                      <span className="text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded mr-2">
-                        {warga.blok}
-                      </span>
-                      <span className="text-sm font-medium text-slate-800">{warga.nama}</span>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-0.5">{formatRupiah(warga.nominalIuran)} / bulan</p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {/* Tombol Tagih WA hanya muncul jika Belum Bayar */}
-                    {warga.status === "Belum Bayar" && (
-                      <button
-                        onClick={() => kirimTagihanWA(warga)}
-                        title="Kirim Pengingat via WhatsApp"
-                        className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-600 hover:bg-green-700 text-white transition flex items-center gap-1"
-                      >
-                        <span>Tagih WA</span>
-                      </button>
-                    )}
-
-                    <button
-                      onClick={() => toggleStatusWarga(warga)}
-                      className={`text-xs font-semibold px-3 py-1 rounded-full transition ${
-                        warga.status === "Lunas"
-                          ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                          : "bg-amber-100 text-amber-700 hover:bg-amber-200"
-                      }`}
-                    >
-                      {warga.status}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-      </main>
-    </div>
-  );
-}
+        <main className="p-6 max-w-6xl w-full mx-auto space-y-6">
+          {/* === TAB 1: BERANDA RT === */}
+          {tabAktif === "beranda" && (
+            <>
+              {/* 3 Kartu Pos Kas RT */}
