@@ -14,6 +14,8 @@ interface Warga {
   id: number;
   blok: string;
   nama: string;
+  noWa: string; // Format internasional tanpa +, misal 62812...
+  nominalIuran: number;
   status: "Lunas" | "Belum Bayar";
 }
 
@@ -26,13 +28,13 @@ export default function SmartWargaMVP() {
     { id: 4, tanggal: "14 Nov 2026", keterangan: "Perbaikan Lampu Jalan Blok B", jenis: "keluar", nominal: 350000 },
   ]);
 
-  // Data Awal Status Iuran Warga
+  // Data Awal Status Iuran Warga (Dilengkapi Nomor WA & Nominal)
   const [daftarWarga, setDaftarWarga] = useState<Warga[]>([
-    { id: 1, blok: "A-01", nama: "Bpk. Hendra Wijaya", status: "Lunas" },
-    { id: 2, blok: "A-02", nama: "Bpk. Budi Santoso", status: "Lunas" },
-    { id: 3, blok: "A-03", nama: "Ibu Ratna Sari", status: "Belum Bayar" },
-    { id: 4, blok: "B-01", nama: "Bpk. Dimas Pratama", status: "Lunas" },
-    { id: 5, blok: "B-02", nama: "Bpk. Agus Salim", status: "Belum Bayar" },
+    { id: 1, blok: "A-01", nama: "Bpk. Hendra Wijaya", noWa: "6281234567890", nominalIuran: 150000, status: "Lunas" },
+    { id: 2, blok: "A-02", nama: "Bpk. Budi Santoso", noWa: "6281234567891", nominalIuran: 150000, status: "Lunas" },
+    { id: 3, blok: "A-03", nama: "Ibu Ratna Sari", noWa: "6281234567892", nominalIuran: 150000, status: "Belum Bayar" },
+    { id: 4, blok: "B-01", nama: "Bpk. Dimas Pratama", noWa: "6281234567893", nominalIuran: 150000, status: "Lunas" },
+    { id: 5, blok: "B-02", nama: "Bpk. Agus Salim", noWa: "6281234567894", nominalIuran: 150000, status: "Belum Bayar" },
   ]);
 
   // State untuk Form Input Pengurus
@@ -67,13 +69,33 @@ export default function SmartWargaMVP() {
     setNominal("");
   };
 
-  // Fungsi Ubah Status Bayar Warga
-  const toggleStatusWarga = (id: number) => {
+  // Fungsi Ubah Status Bayar Warga + Otomatis Catat ke Kas jika Lunas
+  const toggleStatusWarga = (warga: Warga) => {
+    const statusBaru = warga.status === "Lunas" ? "Belum Bayar" : "Lunas";
+
     setDaftarWarga(
-      daftarWarga.map((w) =>
-        w.id === id ? { ...w, status: w.status === "Lunas" ? "Belum Bayar" : "Lunas" } : w
-      )
+      daftarWarga.map((w) => (w.id === warga.id ? { ...w, status: statusBaru } : w))
     );
+
+    // Jika diubah menjadi Lunas, otomatis tambahkan ke mutasi kas masuk
+    if (statusBaru === "Lunas") {
+      const transaksiOtomatis: Transaksi = {
+        id: Date.now(),
+        tanggal: "17 Nov 2026",
+        keterangan: `Iuran Nov 2026 - ${warga.nama} (${warga.blok})`,
+        jenis: "masuk",
+        nominal: warga.nominalIuran,
+      };
+      setTransaksi([transaksiOtomatis, ...transaksi]);
+    }
+  };
+
+  // Fungsi Generate Link WhatsApp Tagihan Otomatis
+  const kirimTagihanWA = (warga: Warga) => {
+    const pesan = `Halo *${warga.nama}* (Blok *${warga.blok}*),%0A%0AIni adalah pengingat otomatis dari *SmartWarga - Klaster Harmoni RT 05*.%0A%0AIuran lingkungan bulan *November 2026* sebesar *${formatRupiah(warga.nominalIuran)}* tercatat masih *Belum Terbayar*.%0A%0AMohon dapat melakukan pembayaran melalui rekening kas RT atau konfirmasi jika sudah transfer.%0A%0ATerima kasih atas partisipasinya menjaga kenyamanan lingkungan kita! 🙏`;
+
+    const urlWA = `https://wa.me/${warga.noWa}?text=${pesan}`;
+    window.open(urlWA, "_blank");
   };
 
   return (
@@ -83,10 +105,10 @@ export default function SmartWargaMVP() {
         <div className="max-w-5xl mx-auto px-4 py-5 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">SmartWarga</h1>
-            <p className="text-emerald-100 text-sm">UANG KAS • VALENCIA TAHAP III</p>
+            <p className="text-emerald-100 text-sm">Portal Transparansi Kas & Iuran • Klaster Harmoni RT 05</p>
           </div>
           <span className="bg-emerald-800 text-emerald-100 text-xs px-3 py-1.5 rounded-full font-medium">
-            MVP v0.1 • Live Demo
+            MVP v0.2 • WA Reminder Ready
           </span>
         </div>
       </header>
@@ -110,12 +132,12 @@ export default function SmartWargaMVP() {
 
         {/* Form Input Khusus Bendahara / Pengurus */}
         <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <h2 className="text-lg font-bold text-slate-800 mb-1">Catat Transaksi Kas (Mode Pengurus)</h2>
-          <p className="text-xs text-slate-500 mb-4">Simulasi input pemasukan iuran atau pengeluaran operasional lingkungan.</p>
+          <h2 className="text-lg font-bold text-slate-800 mb-1">Catat Transaksi Kas Manual (Mode Pengurus)</h2>
+          <p className="text-xs text-slate-500 mb-4">Untuk mencatat pemasukan lain-lain atau pengeluaran operasional RT.</p>
           <form onSubmit={handleTambahTransaksi} className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <input
               type="text"
-              placeholder="Keterangan (misal: Iuran Blok C-02)"
+              placeholder="Keterangan (misal: Beli Token Listrik Pos)"
               value={keterangan}
               onChange={(e) => setKeterangan(e.target.value)}
               className="md:col-span-2 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
@@ -170,31 +192,48 @@ export default function SmartWargaMVP() {
             </div>
           </section>
 
-          {/* Kolom Kanan: Status Pembayaran Warga */}
+          {/* Kolom Kanan: Status Pembayaran Warga + Tombol Tagih WA */}
           <section className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold text-slate-800">Status Iuran November 2026</h2>
-              <span className="text-xs text-slate-400">Klik status untuk ubah</span>
+              <span className="text-xs text-slate-400">Klik status untuk lunas</span>
             </div>
             <div className="divide-y divide-slate-100">
               {daftarWarga.map((warga) => (
-                <div key={warga.id} className="py-3 flex justify-between items-center">
+                <div key={warga.id} className="py-3 flex justify-between items-center gap-2">
                   <div>
-                    <span className="text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded mr-2">
-                      {warga.blok}
-                    </span>
-                    <span className="text-sm font-medium text-slate-800">{warga.nama}</span>
+                    <div className="flex items-center">
+                      <span className="text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded mr-2">
+                        {warga.blok}
+                      </span>
+                      <span className="text-sm font-medium text-slate-800">{warga.nama}</span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">{formatRupiah(warga.nominalIuran)} / bulan</p>
                   </div>
-                  <button
-                    onClick={() => toggleStatusWarga(warga.id)}
-                    className={`text-xs font-semibold px-3 py-1 rounded-full transition ${
-                      warga.status === "Lunas"
-                        ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                        : "bg-amber-100 text-amber-700 hover:bg-amber-200"
-                    }`}
-                  >
-                    {warga.status}
-                  </button>
+
+                  <div className="flex items-center gap-2">
+                    {/* Tombol Tagih WA hanya muncul jika Belum Bayar */}
+                    {warga.status === "Belum Bayar" && (
+                      <button
+                        onClick={() => kirimTagihanWA(warga)}
+                        title="Kirim Pengingat via WhatsApp"
+                        className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-600 hover:bg-green-700 text-white transition flex items-center gap-1"
+                      >
+                        <span>Tagih WA</span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => toggleStatusWarga(warga)}
+                      className={`text-xs font-semibold px-3 py-1 rounded-full transition ${
+                        warga.status === "Lunas"
+                          ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                          : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                      }`}
+                    >
+                      {warga.status}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
