@@ -188,7 +188,7 @@ export default function SmartWargaRT() {
         <div>
           <div className="p-6 border-b border-emerald-900">
             <h1 className="text-xl font-extrabold tracking-tight text-white">SmartWarga</h1>
-            <p className="text-xs text-emerald-300 mt-0.5">Sistem Pengelolaan 1 RT</p>
+            <p className="text-xs text-emerald-300 mt-0.5">Sistem Pengelolaan IT PERUMAHAN VALENCIA TAHAP III</p>
           </div>
 
           <nav className="p-4 space-y-1.5">
