@@ -46,7 +46,7 @@ export default function SmartWargaRT() {
   const [tabAktif, setTabAktif] = useState<TabRT>("beranda");
 
   const infoRT = {
-    namaRT: "RT 05 / RW 02 • Perumahan Griya Harmoni",
+    namaRT: "RT 05 / RW 02 • Perumahan Valencia Tahap III",
     iuranBulanan: 150000,
     rekeningRT: "BCA 1234567890 a.n. Kas RT 05",
   };
